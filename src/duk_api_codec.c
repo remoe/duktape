@@ -44,17 +44,17 @@ static void duk__base64_encode_helper(const unsigned char *src, const unsigned c
 			 * and cleaner, but this is shorter.
 			 */
 			if (i >= snip) {
-				y = '=';
+				y = DUK_ASC_EQUALS;
 			} else if (x <= 25) {
-				y = x + 'A';
+				y = x + DUK_ASC_UC_A;
 			} else if (x <= 51) {
-				y = x - 26 + 'a';
+				y = x - 26 + DUK_ASC_LC_A;
 			} else if (x <= 61) {
-				y = x - 52 + '0';
+				y = x - 52 + DUK_ASC_0;
 			} else if (x == 62) {
-				y = '+';
+				y = DUK_ASC_PLUS;
 			} else {
-				y = '/';
+				y = DUK_ASC_SLASH;
 			}
 
 			DUK_ASSERT(dst < dst_end);
@@ -77,17 +77,17 @@ static int duk__base64_decode_helper(const unsigned char *src, const unsigned ch
 	while (src < src_end) {
 		x = *src++;
 
-		if (x >= 'A' && x <= 'Z') {
-			y = x - 'A' + 0;
-		} else if (x >= 'a' && x <= 'z') {
-			y = x - 'a' + 26;
-		} else if (x >= '0' && x <= '9') {
-			y = x - '0' + 52;
-		} else if (x == '+') {
+		if (x >= DUK_ASC_UC_A && x <= DUK_ASC_UC_Z) {
+			y = x - DUK_ASC_UC_A + 0;
+		} else if (x >= DUK_ASC_LC_A && x <= DUK_ASC_LC_Z) {
+			y = x - DUK_ASC_LC_A + 26;
+		} else if (x >= DUK_ASC_0 && x <= DUK_ASC_9) {
+			y = x - DUK_ASC_0 + 52;
+		} else if (x == DUK_ASC_PLUS) {
 			y = 62;
-		} else if (x == '/') {
+		} else if (x == DUK_ASC_SLASH) {
 			y = 63;
-		} else if (x == '=') {
+		} else if (x == DUK_ASC_EQUALS) {
 			/* We don't check the zero padding bytes here right now.
 			 * This seems to be common behavior for base-64 decoders.
 			 */
@@ -102,7 +102,7 @@ static int duk__base64_decode_helper(const unsigned char *src, const unsigned ch
 					goto error;
 				}
 				x = *src++;
-				if (x != '=') {
+				if (x != DUK_ASC_EQUALS) {
 					goto error;
 				}
 			} else if (group_idx == 3) {
@@ -300,12 +300,12 @@ void duk_hex_decode(duk_context *ctx, int index) {
 
 	for (i = 0; i < len; i++) {
 		t = str[i];
-		if (t >= '0' && t <= '9') {
-			t = t - '0' + 0x00;
-		} else if (t >= 'a' && t <= 'f') {
-			t = t - 'a' + 0x0a;
-		} else if (t >= 'A' && t <= 'F') {
-			t = t - 'A' + 0x0a;
+		if (t >= DUK_ASC_0 && t <= DUK_ASC_9) {
+			t = t - DUK_ASC_0 + 0x00;
+		} else if (t >= DUK_ASC_LC_A && t <= DUK_ASC_LC_F) {
+			t = t - DUK_ASC_LC_A + 0x0a;
+		} else if (t >= DUK_ASC_UC_A && t <= DUK_ASC_UC_F) {
+			t = t - DUK_ASC_UC_A + 0x0a;
 		} else {
 			goto type_error;
 		}

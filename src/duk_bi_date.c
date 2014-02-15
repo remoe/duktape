@@ -487,8 +487,8 @@ static int duk__format_parts_strftime(duk_context *ctx, int *parts, int tzoffset
 
 /* Matching separator index is used in the control table */
 static const char duk__parse_iso8601_seps[] = {
-	'+' /*0*/, '-' /*1*/, 'T' /*2*/, ' ' /*3*/,
-	':' /*4*/, '.' /*5*/, 'Z' /*6*/, (char) 0 /*7*/
+	DUK_ASC_PLUS  /*0*/, DUK_ASC_MINUS  /*1*/, DUK_ASC_UC_T /*2*/, DUK_ASC_SPACE /*3*/,
+	DUK_ASC_COLON /*4*/, DUK_ASC_PERIOD /*5*/, DUK_ASC_UC_Z /*6*/, DUK_ASC_NUL   /*7*/
 };
 
 /* Rule table: first matching rule is used to determine what to do next. */
@@ -535,9 +535,9 @@ static int duk__parse_string_iso8601_subset(duk_context *ctx, const char *str) {
 	/* Special handling for year sign. */
 	p = str;
 	ch = p[0];
-	if (ch == '+') {
+	if (ch == DUK_ASC_PLUS) {
 		p++;
-	} else if (ch == '-') {
+	} else if (ch == DUK_ASC_MINUS) {
 		neg_year = 1;
 		p++;
 	}
@@ -545,9 +545,9 @@ static int duk__parse_string_iso8601_subset(duk_context *ctx, const char *str) {
 	for (;;) {
 		ch = *p++;
 		DUK_DDD(DUK_DDDPRINT("parsing, part_idx=%d, char=%d ('%c')", part_idx, (int) ch,
-		                     (ch >= 0x20 && ch <= 0x7e) ? ch : '?'));
+		                     (ch >= 0x20 && ch <= 0x7e) ? ch : DUK_ASC_QUESTION));
 
-		if (ch >= '0' && ch <= '9') {
+		if (ch >= DUK_ASC_0 && ch <= DUK_ASC_9) {
 			if (ndigits >= 9) {
 				DUK_DDD(DUK_DDDPRINT("too many digits -> reject"));
 				goto reject;
@@ -555,7 +555,7 @@ static int duk__parse_string_iso8601_subset(duk_context *ctx, const char *str) {
 			if (part_idx == DUK__PI_MILLISECOND /*msec*/ && ndigits >= 3) {
 				/* ignore millisecond fractions after 3 */
 			} else {
-				accum = accum * 10 + ((int) ch) - ((int) '0') + 0x00;
+				accum = accum * 10 + ((int) ch) - ((int) DUK_ASC_0) + 0x00;
 				ndigits++;
 			}
 		} else {
@@ -1127,7 +1127,7 @@ static int duk__set_this_timeval_from_dparts(duk_context *ctx, double *dparts, i
 static void duk__format_parts_iso8601(int *parts, int tzoffset, int flags, duk_uint8_t *out_buf) {
 	char yearstr[8];   /* "-123456\0" */
 	char tzstr[8];     /* "+11:22\0" */
-	char sep = (flags & DUK__FLAG_SEP_T) ? 'T' : ' ';
+	char sep = (flags & DUK__FLAG_SEP_T) ? DUK_ASC_UC_T : DUK_ASC_SPACE;
 
 	DUK_ASSERT(parts[DUK__IDX_MONTH] >= 1 && parts[DUK__IDX_MONTH] <= 12);
 	DUK_ASSERT(parts[DUK__IDX_DAY] >= 1 && parts[DUK__IDX_DAY] <= 31);
@@ -1154,7 +1154,7 @@ static void duk__format_parts_iso8601(int *parts, int tzoffset, int flags, duk_u
 		}
 		tzstr[sizeof(tzstr) - 1] = (char) 0;
 	} else {
-		tzstr[0] = 'Z';
+		tzstr[0] = DUK_ASC_UC_Z;
 		tzstr[1] = (char) 0;
 	}
 
