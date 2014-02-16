@@ -454,9 +454,9 @@ duk_small_int_t duk_unicode_is_identifier_start(duk_codepoint_t cp) {
 
 	/* ASCII (and EOF) fast path -- quick accept and reject */
 	if (cp <= 0x7fL) {
-		if ((cp >= 'a' && cp <= 'z') ||
-		    (cp >= 'A' && cp <= 'Z') ||
-		    cp == '_' || cp == '$') {
+		if ((cp >= DUK_ASC_LC_A && cp <= DUK_ASC_LC_Z) ||
+		    (cp >= DUK_ASC_UC_A && cp <= DUK_ASC_UC_Z) ||
+		    cp == DUK_ASC_UNDERSCORE || cp == DUK_ASC_DOLLAR) {
 			return 1;
 		}
 		return 0;
@@ -539,10 +539,10 @@ duk_small_int_t duk_unicode_is_identifier_part(duk_codepoint_t cp) {
 
 	/* ASCII (and EOF) fast path -- quick accept and reject */
 	if (cp <= 0x7fL) {
-		if ((cp >= 'a' && cp <= 'z') ||
-		    (cp >= 'A' && cp <= 'Z') ||
-		    (cp >= '0' && cp <= '9') ||
-		    cp == '_' || cp == '$') {
+		if ((cp >= DUK_ASC_LC_A && cp <= DUK_ASC_LC_Z) ||
+		    (cp >= DUK_ASC_UC_A && cp <= DUK_ASC_UC_Z) ||
+		    (cp >= DUK_ASC_0 && cp <= DUK_ASC_9) ||
+		    cp == DUK_ASC_UNDERSCORE || cp == DUK_ASC_DOLLAR) {
 			return 1;
 		}
 		return 0;
@@ -600,8 +600,8 @@ duk_small_int_t duk_unicode_is_letter(duk_codepoint_t cp) {
 
 	/* ASCII (and EOF) fast path -- quick accept and reject */
 	if (cp <= 0x7fL) {
-		if ((cp >= 'a' && cp <= 'z') ||
-		    (cp >= 'A' && cp <= 'Z')) {
+		if ((cp >= DUK_ASC_LC_A && cp <= DUK_ASC_LC_Z) ||
+		    (cp >= DUK_ASC_UC_A && cp <= DUK_ASC_UC_Z)) {
 			return 1;
 		}
 		return 0;
@@ -779,12 +779,12 @@ static duk_codepoint_t duk__case_transform_helper(duk_hthread *thr,
 		 */
 
 		if (uppercase) {
-			if (cp >= 'a' && cp <= 'z') {
-				cp = cp - 'a' + 'A';
+			if (cp >= DUK_ASC_LC_A && cp <= DUK_ASC_LC_Z) {
+				cp = cp - DUK_ASC_LC_A + DUK_ASC_UC_A;
 			}
 		} else {
-			if (cp >= 'A' && cp <= 'Z') {
-				cp = cp - 'A' + 'a';
+			if (cp >= DUK_ASC_UC_A && cp <= DUK_ASC_UC_Z) {
+				cp = cp - DUK_ASC_UC_A + DUK_ASC_LC_A;
 			}
 		}
 		goto singlechar;
@@ -947,10 +947,10 @@ duk_small_int_t duk_unicode_re_is_wordchar(duk_codepoint_t x) {
 	 *  Note: the description in E5 Section 15.10.2.6 has a typo, it
 	 *  contains 'A' twice and lacks 'a'; the intent is [0-9a-zA-Z_].
 	 */
-	if ((x >= '0' && x <= '9') ||
-	    (x >= 'a' && x <= 'z') ||
-	    (x >= 'A' && x <= 'Z') ||
-	    (x == '_')) {
+	if ((x >= DUK_ASC_0 && x <= DUK_ASC_9) ||
+	    (x >= DUK_ASC_LC_A && x <= DUK_ASC_LC_Z) ||
+	    (x >= DUK_ASC_UC_A && x <= DUK_ASC_UC_Z) ||
+	    (x == DUK_ASC_UNDERSCORE)) {
 		return 1;
 	}
 	return 0;

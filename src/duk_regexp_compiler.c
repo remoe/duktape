@@ -298,7 +298,7 @@ static void duk__parse_disjunction(duk_re_compiler_ctx *re_ctx, int expect_eof, 
 		                   re_ctx->curr_token.t,
 		                   re_ctx->curr_token.num,
 		                   (re_ctx->curr_token.num >= 0x20 && re_ctx->curr_token.num <= 0x7e) ?
-		                   (char) re_ctx->curr_token.num : '?'));
+		                   (char) re_ctx->curr_token.num : (char) DUK_ASC_QUESTION));
 
 		/* set by atom case clauses */
 		new_atom_start_offset = -1;
@@ -758,21 +758,21 @@ static duk_uint32_t duk__parse_regexp_flags(duk_hthread *thr, duk_hstring *h) {
 	while (p < p_end) {
 		duk_uint8_t c = *p++;
 		switch ((int) c) {
-		case (int) 'g': {
+		case (int) DUK_ASC_LC_G: {
 			if (flags & DUK_RE_FLAG_GLOBAL) {
 				goto error;
 			}
 			flags |= DUK_RE_FLAG_GLOBAL;
 			break;
 		}
-		case (int) 'i': {
+		case (int) DUK_ASC_LC_I: {
 			if (flags & DUK_RE_FLAG_IGNORE_CASE) {
 				goto error;
 			}
 			flags |= DUK_RE_FLAG_IGNORE_CASE;
 			break;
 		}
-		case (int) 'm': {
+		case (int) DUK_ASC_LC_M: {
 			if (flags & DUK_RE_FLAG_MULTILINE) {
 				goto error;
 			}
@@ -840,11 +840,11 @@ static void duk__create_escaped_source(duk_hthread *thr, int idx_pattern) {
 	for (i = 0; i < n; i++) {
 		c = p[i];
 
-		if (c == (duk_uint_fast8_t) '/' && c_prev != (duk_uint_fast8_t) '\\') {
+		if (c == (duk_uint_fast8_t) DUK_ASC_SLASH && c_prev != (duk_uint_fast8_t) DUK_ASC_BACKSLASH) {
 			/* Unescaped '/' ANYWHERE in the regexp (in disjunction,
 			 * inside a character class, ...) => same escape works.
 			 */
-			duk_hbuffer_append_byte(thr, buf, (duk_uint8_t) '\\');
+			duk_hbuffer_append_byte(thr, buf, (duk_uint8_t) DUK_ASC_BACKSLASH);
 		}
 		duk_hbuffer_append_byte(thr, buf, (duk_uint8_t) c);
 

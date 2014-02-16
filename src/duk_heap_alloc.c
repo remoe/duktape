@@ -283,9 +283,9 @@ static int duk__init_heap_strings(duk_heap *heap) {
 		for (j = 0; j < len; j++) {
 			t = duk_bd_decode(bd, 5);
 			if (t < DUK__BITPACK_LETTER_LIMIT) {
-				t = t + 'A' + mode;
+				t = t + DUK_ASC_UC_A + mode;
 			} else if (t == DUK__BITPACK_UNDERSCORE) {
-				t = (int) '_';
+				t = (int) DUK_ASC_UNDERSCORE;
 			} else if (t == DUK__BITPACK_FF) {
 				/* Internal keys are prefixed with 0xFF in the stringtable
 				 * (which makes them invalid UTF-8 on purpose).
@@ -294,12 +294,12 @@ static int duk__init_heap_strings(duk_heap *heap) {
 			} else if (t == DUK__BITPACK_SWITCH1) {
 				t = duk_bd_decode(bd, 5);
 				DUK_ASSERT(t >= 0 && t <= 25);
-				t = t + 'A' + (mode ^ 32);
+				t = t + DUK_ASC_UC_A + (mode ^ 32);
 			} else if (t == DUK__BITPACK_SWITCH) {
 				mode = mode ^ 32;
 				t = duk_bd_decode(bd, 5);
 				DUK_ASSERT(t >= 0 && t <= 25);
-				t = t + 'A' + mode;
+				t = t + DUK_ASC_UC_A + mode;
 			} else if (t == DUK__BITPACK_SEVENBIT) {
 				t = duk_bd_decode(bd, 7);
 			}
