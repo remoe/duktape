@@ -391,12 +391,20 @@ int duk_is_constructor_call(duk_context *ctx) {
 	duk_hthread *thr = (duk_hthread *) ctx;
 	duk_activation *act;
 
+	/* For user code this could just return 1 (strict) always
+	 * because all Duktape/C functions are considered strict,
+	 * and strict is also the default when nothing is running.
+	 * However, Duktape may call this function internally when
+	 * the current activation is an Ecmascript function, so
+	 * this cannot be replaced by a 'return 1'.
+	 */
+
 	DUK_ASSERT(ctx != NULL);
 	DUK_ASSERT(thr != NULL);
 	DUK_ASSERT_DISABLE(thr->callstack_top >= 0);
 
 	if (thr->callstack_top <= 0) {
-		return 0;
+		return 1;  /* strict by default */
 	}
 
 	act = thr->callstack + thr->callstack_top - 1;
