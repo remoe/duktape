@@ -697,8 +697,9 @@ void duk_remove(duk_context *ctx, int index) {
 #endif
 }
 
-void duk_xmove(duk_context *ctx, duk_context *from_ctx, unsigned int count) {
-	duk_hthread *thr = (duk_hthread *) ctx;
+void duk_xmove(duk_context *to_ctx, duk_context *from_ctx, unsigned int count) {
+	duk_context *ctx = to_ctx;
+	duk_hthread *thr = (duk_hthread *) to_ctx;
 	duk_hthread *from_thr = (duk_hthread *) from_ctx;
 	void *src;
 	duk_size_t nbytes;
@@ -706,12 +707,14 @@ void duk_xmove(duk_context *ctx, duk_context *from_ctx, unsigned int count) {
 
 	DUK_ASSERT(ctx != NULL);
 	DUK_ASSERT(from_ctx != NULL);
+	DUK_UNREF(ctx);
 
 	nbytes = sizeof(duk_tval) * count;
 	if (nbytes == 0) {
 		return;
 	}
 	DUK_ASSERT(thr->valstack_top <= thr->valstack_end);
+
 	if ((duk_size_t) ((duk_uint8_t *) thr->valstack_end - (duk_uint8_t *) thr->valstack_top) < nbytes) {
 		DUK_ERROR(thr, DUK_ERR_API_ERROR, "attempt to push beyond currently allocated stack");
 	}
@@ -730,6 +733,9 @@ void duk_xmove(duk_context *ctx, duk_context *from_ctx, unsigned int count) {
 		DUK_TVAL_INCREF(thr, p);
 		p++;
 	}
+
+	/* remove values from the source stack */
+	duk_set_top(from_ctx, -count);
 }
 
 /*

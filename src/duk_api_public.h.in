@@ -298,7 +298,38 @@ void duk_dup_top(duk_context *ctx);
 void duk_insert(duk_context *ctx, int to_index);
 void duk_replace(duk_context *ctx, int to_index);
 void duk_remove(duk_context *ctx, int index);
-void duk_xmove(duk_context *from_ctx, duk_context *to_ctx, unsigned int count);  /* FIXME: undocumented */
+
+/*
+ *  Stack slice operations, also includes stack-to-stack movement
+ */
+
+void duk_xmove(duk_context *to_ctx, duk_context *from_ctx, unsigned int count);
+
+#if 0
+/* FIXME: perhaps a bit extended semantics instead? */
+void duk_xmove(duk_context *to_ctx, duk_context *from_ctx, int to_idx, int from_idx, unsigned int count);
+#define duk_xmove_top(to_ctx,from_ctx,count) \
+	duk_xmove((to_ctx), (from_ctx), duk_get_top((to_ctx)), duk_get_top((from_ctx)) - (count), (count))
+
+/* FIXME: also these primitives? */
+void duk_xcopy(duk_context *to_ctx, duk_context *from_ctx, int to_idx, int from_idx, unsigned int count);
+void duk_xremove(duk_context *ctx, int idx, unsigned int count);
+void duk_xinsert(duk_context *ctx, int idx, unsigned int count);
+#endif
+
+#if 0
+/* FIXME: implement with a single primitive? */
+void duk_xsplice(duk_context *to_ctx, duk_context *from_ctx, int to_idx, int to_count, unsigned int to_del_count, int from_idx, int from_count, unsigned int from_del_count);
+
+#define duk_xmove(to_ctx,from_ctx,to_idx,from_idx,count) \
+	duk_xsplice((to_ctx), (from_ctx), (to_idx), (count), 0, (from_idx), (count), (count))
+#define duk_xcopy(to_ctx,from_ctx,to_idx,from_idx,count) \
+	duk_xsplice((to_ctx), (from_ctx), (to_idx), (count), 0, (from_idx), (count), 0)
+#define duk_xremove(to_ctx,idx,count) \
+	duk_xsplice((to_ctx), (to_ctx), (idx), 0, (count), (idx), 0, 0)
+#define duk_xinsert(to_ctx,idx,count) \
+	duk_xsplice((to_ctx), (to_ctx), (idx), (count), 0, duk_get_top((to_ctx)) - (count), (count), (count))
+#endif
 
 /*
  *  Push operations
