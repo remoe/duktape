@@ -196,7 +196,7 @@ ul.breakdown li {
 /* narrow layout: smaller preformatted text (tends to be quite wide) */
 @media screen and (max-width:800px) {
 	.content pre {
-		font-size: 10pt;
+		font-size: 8pt;
 	}
 }
 
