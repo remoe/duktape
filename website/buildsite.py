@@ -12,6 +12,7 @@ import re
 import tempfile
 import atexit
 import md5
+import json
 from bs4 import BeautifulSoup, Tag
 
 colorize = True
@@ -710,11 +711,6 @@ def generateIndexPage():
 	index_soup = validateAndParseHtml(readFile('index/index.html'))
 	setNavSelected(templ_soup, 'Home')
 
-	# add the cache manifest to the index.html page only
-	# FIXME: or all nav pages except REPL?
-	html_elem = templ_soup.select('html')[0]
-	html_elem['manifest'] = 'duktape.appcache'
-
 	title_elem = templ_soup.select('#template-title')[0]
 	del title_elem['id']
 	title_elem.string = 'Duktape'
@@ -939,6 +935,10 @@ def scrapeDuktapeVersion():
 		raise Exception('cannot scrape Duktape version')
 	return str_ver, raw_ver
 
+def addManifestLink(soup):
+	html_elem = soup.select('html')[0]
+	html_elem['manifest'] = 'cache.manifest'
+
 def generateAppCacheManifest(verstr, outdir):
 	cached_files = []
 	tmpfiles = os.listdir(outdir)
@@ -959,17 +959,55 @@ def generateAppCacheManifest(verstr, outdir):
 	res.append('# Duktape website appcache manifest for Duktape %s.' % verstr)
 	res.append('# Must be served with MIME type "text/cache-manifest" and')
 	res.append('# expiry must be carefully set (client will not refetch otherwise).')
+	res.append('#')
+	res.append('# Apache:')
+	res.append('#    # a2enmod expires')
+	res.append('#    ExpiresActive On')
+	res.append('#    ExpiresByType text/cache-manifest "access plus 0 seconds"')
+	res.append('#')
 	res.append('# Generated: ' + str(datetime.datetime.utcnow().isoformat()))  # ensures file updates on every build
 	res.append('')
 	res.append('CACHE:')
 	for fn in cached_files:
 		res.append(fn)
+	res.append('https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png')
 	res.append('')
 	res.append('FALLBACK:')
+	res.append('/webapp index.html')
 	res.append('')
 	res.append('NETWORK:')
 	res.append('*')
 	return '\n'.join(res) + '\n'
+
+def generateWebAppManifest(verstr):
+	# https://developer.mozilla.org/en-US/Apps/Build/Manifest
+	# https://developer.mozilla.org/en-US/Apps/Build/Manifest#Path_handling
+	# Must be served with MIME type: application/x-web-app-manifest+json
+	# AddType application/x-web-app-manifest+json .webapp
+
+	res = {}
+	res['name'] = 'duktape.org'
+	res['description'] = 'duktape.org offline documentation for Duktape %s' % verstr
+	res['launch_path'] = '/webapp/index.html'  # must be absolute
+	res['icons'] = {
+		'16': '/webapp/touch_icon_16x16.png',
+		'32': '/webapp/touch_icon_32x32.png',
+		'48': '/webapp/touch_icon_48x48.png',
+		'60': '/webapp/touch_icon_60x60.png',
+		'64': '/webapp/touch_icon_64x64.png',
+		'128': '/webapp/touch_icon_128x128.png',
+		'256': '/webapp/touch_icon_256x256.png'
+	}
+	res['developer'] = {
+		'name': 'duktape.org',
+		'url': 'http://www.duktape.org/'
+	}
+	res['appcache_path'] = '/webapp/cache.manifest'  # must be absolute?
+	res['default_locale'] = 'en'
+	res['chrome'] = {
+		'navigation': True
+	}
+	return json.dumps(res)
 
 def main():
 	outdir = sys.argv[1]; assert(outdir)
@@ -993,32 +1031,46 @@ def main():
 	soup = generateApiDoc(apidocdir, apitestdir)
 	soup = postProcess(soup, apiincdir, autoAnchors=True, headingLinks=True, duktapeVersion=duk_verstr)
 	writeFile(os.path.join(outdir, 'api.html'), soup.encode(out_charset))
+	addManifestLink(soup)
+	writeFile(os.path.join(outdir, 'webapp', 'api.html'), soup.encode(out_charset))
 
 	print 'Generating guide.html'
 	soup = generateGuide()
 	soup = postProcess(soup, guideincdir, autoAnchors=True, headingLinks=True, duktapeVersion=duk_verstr)
 	writeFile(os.path.join(outdir, 'guide.html'), soup.encode(out_charset))
+	addManifestLink(soup)
+	writeFile(os.path.join(outdir, 'webapp', 'guide.html'), soup.encode(out_charset))
 
 	print 'Generating index.html'
 	soup = generateIndexPage()
 	soup = postProcess(soup, None, duktapeVersion=duk_verstr)
 	writeFile(os.path.join(outdir, 'index.html'), soup.encode(out_charset))
+	addManifestLink(soup)
+	writeFile(os.path.join(outdir, 'webapp', 'index.html'), soup.encode(out_charset))
 
 	print 'Generating download.html'
 	soup = generateDownloadPage(releases_filename)
 	soup = postProcess(soup, None, duktapeVersion=duk_verstr)
 	writeFile(os.path.join(outdir, 'download.html'), soup.encode(out_charset))
+	addManifestLink(soup)
+	writeFile(os.path.join(outdir, 'webapp', 'download.html'), soup.encode(out_charset))
 
 	print 'Copying misc files'
 	for i in [ 'favicon.ico',
 	           'startup_image_320x480.png',
-	           'touch_icon_114x114.png',
-	           'touch_icon_120x120.png',
-	           'touch_icon_144x144.png',
-	           'touch_icon_152x152.png',
+	           'touch_icon_16x16.png',
+	           'touch_icon_32x32.png',
+	           'touch_icon_48x48.png',
 	           'touch_icon_57x57.png',
 	           'touch_icon_60x60.png',
-	           'touch_icon_72x72.png' ]:
+	           'touch_icon_64x64.png',
+	           'touch_icon_72x72.png',
+	           'touch_icon_114x114.png',
+	           'touch_icon_120x120.png',
+	           'touch_icon_128x128.png',
+	           'touch_icon_144x144.png',
+	           'touch_icon_152x152.png',
+	           'touch_icon_256x256.png' ]:
 		shutil.copyfile(os.path.join('./', i), os.path.join(outdir, i))
 
 	print 'Copying binaries'
@@ -1032,9 +1084,22 @@ def main():
 	           '../dukweb/dukweb.html' ]:
 		shutil.copyfile(os.path.join('./', i), os.path.join(outdir, os.path.basename(i)))
 
+	print 'Copy remaining files to webapp dir'
+	filelist = os.listdir(outdir)
+	for i in os.listdir(outdir):
+		if not os.path.isfile(os.path.join(outdir, i)):
+			continue
+		if os.path.exists(os.path.join(outdir, 'webapp', i)):
+			continue
+		shutil.copyfile(os.path.join(outdir, i), os.path.join(outdir, 'webapp', i))
+
 	print 'Building appcache manifest'
-	manifest = generateAppCacheManifest(duk_verstr, outdir)
-	writeFile(os.path.join(outdir, 'duktape.appcache'), manifest)
+	manifest = generateAppCacheManifest(duk_verstr, os.path.join(outdir, 'webapp'))
+	writeFile(os.path.join(outdir, 'webapp', 'cache.manifest'), manifest)
+
+	print 'Building webapp manifest'
+	manifest = generateWebAppManifest(duk_verstr)
+	writeFile(os.path.join(outdir, 'webapp', 'manifest.webapp'), manifest)
 
 if __name__ == '__main__':
 	main()

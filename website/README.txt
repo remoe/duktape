@@ -98,16 +98,30 @@ only see fallback fonts.
 Offline web application
 =======================
 
+When a HTML page has a manifest link, its caching behavior will change.
+To avoid this in normal browsing, the "webapp" version of duktape.org is
+provided from a separate URI path (``duktape.org/webapp``).
+
 The manifest file must be served with MIME type ``text/cache-manifest``.
 When the web page is cached for offline use, the client will not reload
 any resource (even expired ones) unless the manifest file changes.  To
 ensure the manifest changes on a rebuild, a build timestamp is included
 in manifest comments.  There are other pitfalls too.
 
+To make a webpage a Firefox (or a Firefox OS) "app" a JSON-based
+``manifest.webapp`` file is needed.  It must be served with the MIME
+type ``application/x-web-app-manifest+json`` and can be used in
+conjunction with an appcache manifest.
+
 See:
 
 * http://www.whatwg.org/specs/web-apps/current-work/multipage/offline.html
+* https://developer.mozilla.org/en-US/Apps/Build/Manifest
+* https://developer.mozilla.org/fi/docs/HTML/Using_the_application_cache
+* http://davidwalsh.name/firefox-app
+* https://developer.mozilla.org/en-US/Apps/Build/Manifest#Path_handling
 * http://alistapart.com/article/application-cache-is-a-douchebag
+* http://flailingmonkey.com/application-cache-not-a-douchebag
 
 Minimizing HTML file size and transfer size
 ===========================================
