@@ -710,6 +710,11 @@ def generateIndexPage():
 	index_soup = validateAndParseHtml(readFile('index/index.html'))
 	setNavSelected(templ_soup, 'Home')
 
+	# add the cache manifest to the index.html page only
+	# FIXME: or all nav pages except REPL?
+	html_elem = templ_soup.select('html')[0]
+	html_elem['manifest'] = 'duktape.appcache'
+
 	title_elem = templ_soup.select('#template-title')[0]
 	del title_elem['id']
 	title_elem.string = 'Duktape'
@@ -934,6 +939,38 @@ def scrapeDuktapeVersion():
 		raise Exception('cannot scrape Duktape version')
 	return str_ver, raw_ver
 
+def generateAppCacheManifest(verstr, outdir):
+	cached_files = []
+	tmpfiles = os.listdir(outdir)
+	tmpfiles.sort()
+	for fn in tmpfiles:
+		# skip binary downloads and a few other files
+		if fn.endswith('tar.xz') or \
+		   fn.startswith('touch_icon') or \
+		   fn.startswith('startup_image') or \
+		   fn.startswith('jquery') or \
+		   fn in [ 'dukweb.js' ]:
+			continue
+		cached_files.append(fn)
+
+	res = []
+	res.append('CACHE MANIFEST')  # must be first
+	res.append('')
+	res.append('# Duktape website appcache manifest for Duktape %s.' % verstr)
+	res.append('# Must be served with MIME type "text/cache-manifest" and')
+	res.append('# expiry must be carefully set (client will not refetch otherwise).')
+	res.append('# Generated: ' + str(datetime.datetime.utcnow().isoformat()))  # ensures file updates on every build
+	res.append('')
+	res.append('CACHE:')
+	for fn in cached_files:
+		res.append(fn)
+	res.append('')
+	res.append('FALLBACK:')
+	res.append('')
+	res.append('NETWORK:')
+	res.append('*')
+	return '\n'.join(res) + '\n'
+
 def main():
 	outdir = sys.argv[1]; assert(outdir)
 	apidocdir = 'api'
@@ -994,6 +1031,10 @@ def main():
 	           '../dukweb/dukweb.css',
 	           '../dukweb/dukweb.html' ]:
 		shutil.copyfile(os.path.join('./', i), os.path.join(outdir, os.path.basename(i)))
+
+	print 'Building appcache manifest'
+	manifest = generateAppCacheManifest(duk_verstr, outdir)
+	writeFile(os.path.join(outdir, 'duktape.appcache'), manifest)
 
 if __name__ == '__main__':
 	main()

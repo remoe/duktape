@@ -10,8 +10,11 @@ This directory contains all that is necessary to build the Duktape website
 
 The website has been implemented as a set of static files, to allow the site
 to be cached and viewed off-line.  The pages do depend on external resources,
-especially Google Fonts and Web Font Loader.  However, the pages are designed
-to gracefully degrade:
+especially Google Fonts and Web Font Loader.  There is an offline variant
+(using appcache manifest) which can be easily bookmarked for offline use.
+The offline version works in most browsers but is Firefox OS optimized.
+
+The pages are designed to gracefully degrade:
 
 * No network connection: pages must be readable with at least fallback fonts
 
@@ -19,8 +22,8 @@ to gracefully degrade:
 
 * No Javascript: pages must be readable
 
-The pages are also designed to be reasonably readable with a text browser
-like w3m or elinks.
+* Non-graphical browser (e.g. w3m or elinks): pages must be readable and
+  layout must look reasonable
 
 Build process
 =============
@@ -91,6 +94,20 @@ immediately removed by Javascript code.  If Javascript is disabled, the
 class remains, and text can be shown based on this custom class.
 Unfortunately this means that clients without Javascript support will
 only see fallback fonts.
+
+Offline web application
+=======================
+
+The manifest file must be served with MIME type ``text/cache-manifest``.
+When the web page is cached for offline use, the client will not reload
+any resource (even expired ones) unless the manifest file changes.  To
+ensure the manifest changes on a rebuild, a build timestamp is included
+in manifest comments.  There are other pitfalls too.
+
+See:
+
+* http://www.whatwg.org/specs/web-apps/current-work/multipage/offline.html
+* http://alistapart.com/article/application-cache-is-a-douchebag
 
 Minimizing HTML file size and transfer size
 ===========================================
@@ -235,6 +252,8 @@ Browser testing
 Browser testing is ad hoc now.  Current browser set:
 
 * Firefox
+
+  - Firefox OS hosted application
 
 * Chromium
 
