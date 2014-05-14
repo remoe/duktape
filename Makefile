@@ -746,6 +746,7 @@ tidy-site:
 site: dukweb.js jquery-1.11.0.js
 	rm -rf site
 	mkdir site
+	mkdir site/webapp
 	cd website/; $(PYTHON) buildsite.py ../site/
 	-@rm -rf /tmp/site/
 	cp -r site /tmp/  # FIXME
