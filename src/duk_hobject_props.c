@@ -2150,6 +2150,12 @@ int duk_hobject_getprop(duk_hthread *thr, duk_tval *tv_obj, duk_tval *tv_key) {
 		break;
 	}
 
+	case DUK_TAG_LIGHTFUNC: {
+		/* FIXME: virtual properties */
+		DUK_ERROR(thr, DUK_ERR_TYPE_ERROR, "FIXME: lightfunc unimplemented");
+		break;
+	}
+
 	default: {
 		/* number */
 		DUK_DDD(DUK_DDDPRINT("base object is a number, start lookup from number prototype"));
@@ -2950,6 +2956,12 @@ int duk_hobject_putprop(duk_hthread *thr, duk_tval *tv_obj, duk_tval *tv_key, du
 	case DUK_TAG_POINTER: {
 		DUK_DDD(DUK_DDDPRINT("base object is a pointer, start lookup from pointer prototype"));
 		curr = thr->builtins[DUK_BIDX_POINTER_PROTOTYPE];
+		break;
+	}
+
+	case DUK_TAG_LIGHTFUNC: {
+		/* FIXME: virtual properties */
+		DUK_ERROR(thr, DUK_ERR_TYPE_ERROR, "FIXME: lightfunc unimplemented");
 		break;
 	}
 

@@ -1292,6 +1292,10 @@ size_t duk_get_length(duk_context *ctx, int index) {
 		DUK_ASSERT(h != NULL);
 		return (size_t) DUK_HBUFFER_GET_SIZE(h);
 	}
+	case DUK_TAG_LIGHTFUNC: {
+		/* FIXME: return value for virtual length property */
+		return 0;
+	}
 	default:
 		/* number */
 		DUK_ASSERT(DUK_TVAL_IS_NUMBER(tv));
@@ -1737,6 +1741,11 @@ const char *duk_to_string(duk_context *ctx, int index) {
 		}
 		break;
 	}
+	case DUK_TAG_LIGHTFUNC: {
+		/* FIXME: lightfunc:ptr or something */
+		duk_push_string(ctx, "lightfunc");
+		break;
+	}
 	default: {
 		/* number */
 		DUK_ASSERT(DUK_TVAL_IS_NUMBER(tv));
@@ -1835,6 +1844,10 @@ void *duk_to_pointer(duk_context *ctx, int index) {
 		 */
 		res = (void *) DUK_TVAL_GET_HEAPHDR(tv);
 		break;
+	case DUK_TAG_LIGHTFUNC:
+		/* FIXME */
+		res = NULL;
+		break;
 	default:
 		/* number */
 		res = NULL;
@@ -1894,6 +1907,11 @@ void duk_to_object(duk_context *ctx, int index) {
 		               DUK_HOBJECT_CLASS_AS_FLAGS(DUK_HOBJECT_CLASS_POINTER);
 		shared_proto = DUK_BIDX_POINTER_PROTOTYPE;
 		goto create_object;
+	}
+	case DUK_TAG_LIGHTFUNC: {
+		/* FIXME: coerce to a function object with concrete properties? */
+		DUK_ERROR(thr, DUK_ERR_TYPE_ERROR, "FIXME: lightfunc coercion unimplemented");
+		break;
 	}
 	default: {
 		shared_flags = DUK_HOBJECT_FLAG_EXTENSIBLE |
@@ -1968,6 +1986,9 @@ int duk_get_type(duk_context *ctx, int index) {
 		return DUK_TYPE_BUFFER;
 	case DUK_TAG_POINTER:
 		return DUK_TYPE_POINTER;
+	case DUK_TAG_LIGHTFUNC:
+		/* FIXME: add exposed type */
+		return DUK_TYPE_OBJECT;
 	default:
 		/* Note: number has no explicit tag (in 8-byte representation) */
 		DUK_ASSERT(DUK_TVAL_IS_NUMBER(tv));
@@ -2002,6 +2023,9 @@ int duk_get_type_mask(duk_context *ctx, int index) {
 		return DUK_TYPE_MASK_BUFFER;
 	case DUK_TAG_POINTER:
 		return DUK_TYPE_MASK_POINTER;
+	case DUK_TAG_LIGHTFUNC:
+		/* FIXME: add exposed type mask */
+		return DUK_TYPE_MASK_OBJECT;
 	default:
 		/* Note: number has no explicit tag (in 8-byte representation) */
 		DUK_ASSERT(DUK_TVAL_IS_NUMBER(tv));

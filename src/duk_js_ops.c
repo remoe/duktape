@@ -87,6 +87,9 @@ int duk_js_toboolean(duk_tval *tv) {
 		void *p = DUK_TVAL_GET_POINTER(tv);
 		return (p != NULL ? 1 : 0);
 	}
+	case DUK_TAG_LIGHTFUNC: {
+		return 1;
+	}
 	default: {
 		/* number */
 		int c;
@@ -219,6 +222,10 @@ double duk_js_tonumber(duk_hthread *thr, duk_tval *tv) {
 		 */
 		void *p = DUK_TVAL_GET_POINTER(tv);
 		return (p != NULL ? 1.0 : 0.0);
+	}
+	case DUK_TAG_LIGHTFUNC: {
+		/* +(function(){}) -> NaN */
+		return DUK_DOUBLE_NAN;
 	}
 	default: {
 		/* number */
@@ -571,6 +578,10 @@ int duk_js_equals_helper(duk_hthread *thr, duk_tval *tv_x, duk_tval *tv_y, duk_s
 				DUK_ASSERT(len_y == 0 || buf_y != NULL);
 				return (DUK_MEMCMP(buf_x, buf_y, len_x) == 0) ? 1 : 0;
 			}
+		}
+		case DUK_TAG_LIGHTFUNC: {
+			/* FIXME: compare func ptrs only, or flags too? */
+			return 0;
 		}
 		default: {
 			DUK_ASSERT(DUK_TVAL_IS_NUMBER(tv_x));
@@ -1115,6 +1126,10 @@ duk_hstring *duk_js_typeof(duk_hthread *thr, duk_tval *tv_x) {
 	case DUK_TAG_BUFFER: {
 		/* implementation specific */
 		idx = DUK_STRIDX_LC_BUFFER;
+		break;
+	}
+	case DUK_TAG_LIGHTFUNC: {
+		idx = DUK_STRIDX_LC_FUNCTION;
 		break;
 	}
 	default: {
