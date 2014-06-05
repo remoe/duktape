@@ -43,6 +43,15 @@
  *  by genbuiltins.py.
  */
 
+/* FIXME: test function */
+static int duk__lightfunc_test(duk_context *ctx) {
+	int v1 = duk_get_int(ctx, 0);
+	int v2 = duk_get_int(ctx, 1);
+	fprintf(stderr, "Lightfunc called, top=%d, args: %d %d\n", duk_get_top(ctx), v1, v2);
+	duk_push_int(ctx, v1 + v2);
+	return 1;
+}
+
 void duk_hthread_create_builtin_objects(duk_hthread *thr) {
 	duk_context *ctx = (duk_context *) thr;
 	duk_bitdecoder_ctx bd_ctx;
@@ -566,6 +575,16 @@ void duk_hthread_create_builtin_objects(duk_hthread *thr) {
 	for (i = 0; i < DUK_NUM_BUILTINS; i++) {
 		DUK_DDD(DUK_DDDPRINT("built-in object %d after initialization and compacting", i));
 		DUK_DEBUG_DUMP_HOBJECT(thr->builtins[i]);
+	}
+#endif
+
+#if 1  /* FIXME: lightfunc testing hack */
+	{
+		duk_tval tv_lfunc;
+		DUK_TVAL_SET_LIGHTFUNC(&tv_lfunc, duk__lightfunc_test, 0);
+		duk_push_string(ctx, "fixme_lightfunc_test");
+		duk_push_tval(ctx, &tv_lfunc);
+		duk_def_prop(ctx, DUK_BIDX_DUKTAPE, DUK_PROPDESC_FLAGS_WC);
 	}
 #endif
 
