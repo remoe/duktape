@@ -49,9 +49,10 @@ typedef union duk_double_union duk_tval;
 #define DUK_TAG_BOOLEAN           0xfff3UL   /* embed: 0 or 1 (false or true) */
 /* DUK_TAG_NUMBER would logically go here, but it has multiple 'tags' */
 #define DUK_TAG_POINTER           0xfff4UL   /* embed: void ptr */
-#define DUK_TAG_STRING            0xfff5UL   /* embed: duk_hstring ptr */
-#define DUK_TAG_OBJECT            0xfff6UL   /* embed: duk_hobject ptr */
-#define DUK_TAG_BUFFER            0xfff7UL   /* embed: duk_hbuffer ptr */
+#define DUK_TAG_LIGHTFUNC         0xfff5UL   /* embed: func ptr */
+#define DUK_TAG_STRING            0xfff6UL   /* embed: duk_hstring ptr */
+#define DUK_TAG_OBJECT            0xfff7UL   /* embed: duk_hobject ptr */
+#define DUK_TAG_BUFFER            0xfff8UL   /* embed: duk_hbuffer ptr */
 
 /* for convenience */
 #define DUK_XTAG_UNDEFINED_ACTUAL 0xfff10000UL
@@ -98,6 +99,12 @@ typedef union duk_double_union duk_tval;
 	} while (0)
 #endif  /* DUK_USE_64BIT_OPS */
 
+/* FIXME: 64bit */
+#define DUK__TVAL_SET_LIGHTFUNC(v,fp,flags)  do { \
+		(v)->ui[DUK_DBL_IDX_UI0] = (((duk_uint32_t) DUK_TAG_LIGHTFUNC) << 16) | ((duk_uint32_t) flags); \
+		(v)->ui[DUK_DBL_IDX_UI1] = (duk_uint32_t) fp; \
+	} while (0)
+
 /* select actual setters */
 #ifdef DUK_USE_FULL_TVAL
 #define DUK_TVAL_SET_UNDEFINED_ACTUAL(v)    DUK__TVAL_SET_UNDEFINED_ACTUAL_FULL((v))
@@ -115,6 +122,7 @@ typedef union duk_double_union duk_tval;
 #define DUK_TVAL_SET_NAN(v)                 DUK__TVAL_SET_NAN_NOTFULL((v))
 #endif
 
+#define DUK_TVAL_SET_LIGHTFUNC(v,fp,flags)  DUK__TVAL_SET_LIGHTFUNC((v),(fp),(flags))
 #define DUK_TVAL_SET_STRING(v,h)            DUK__TVAL_SET_TAGGEDPOINTER((v),(h),DUK_TAG_STRING)
 #define DUK_TVAL_SET_OBJECT(v,h)            DUK__TVAL_SET_TAGGEDPOINTER((v),(h),DUK_TAG_OBJECT)
 #define DUK_TVAL_SET_BUFFER(v,h)            DUK__TVAL_SET_TAGGEDPOINTER((v),(h),DUK_TAG_BUFFER)
@@ -125,6 +133,10 @@ typedef union duk_double_union duk_tval;
 /* getters */
 #define DUK_TVAL_GET_BOOLEAN(v)             ((int) (v)->us[DUK_DBL_IDX_US1])
 #define DUK_TVAL_GET_NUMBER(v)              ((v)->d)
+#define DUK_TVAL_GET_LIGHTFUNC(v,out_fp,out_flags)  do { \
+		(out_flags) = (v)->ui[DUK_DBL_IDX_UI0] & 0xffffUL; \
+		(out_fp) = (v)->ui[DUK_DBL_IDX_UI1]; \
+	} while (0)
 #define DUK_TVAL_GET_STRING(v)              ((duk_hstring *) (v)->vp[DUK_DBL_IDX_VP1])
 #define DUK_TVAL_GET_OBJECT(v)              ((duk_hobject *) (v)->vp[DUK_DBL_IDX_VP1])
 #define DUK_TVAL_GET_BUFFER(v)              ((duk_hbuffer *) (v)->vp[DUK_DBL_IDX_VP1])
@@ -184,9 +196,10 @@ struct duk_tval_struct {
 #define DUK_TAG_NULL                  2
 #define DUK_TAG_BOOLEAN               3
 #define DUK_TAG_POINTER               4
-#define DUK_TAG_STRING                5
-#define DUK_TAG_OBJECT                6
-#define DUK_TAG_BUFFER                7
+#define DUK_TAG_LIGHTFUNC             5
+#define DUK_TAG_STRING                6
+#define DUK_TAG_OBJECT                7
+#define DUK_TAG_BUFFER                8
 
 /* DUK__TAG_NUMBER is intentionally first, as it is the default clause in code
  * to support the 8-byte representation.  Further, it is a non-heap-allocated
