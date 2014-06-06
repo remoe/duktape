@@ -549,8 +549,15 @@ static void duk__coerce_effective_this_binding(duk_hthread *thr,
                                                duk_hobject *func,
                                                int idx_this) {
 	duk_context *ctx = (duk_context *) thr;
+	duk_small_int_t strict;
 
-	if (DUK_HOBJECT_HAS_STRICT(func)) {
+	if (func) {
+		strict = DUK_HOBJECT_HAS_STRICT(func);
+	} else {
+		strict = 1;  /* FIXME: lightweight, bit? */
+	}
+
+	if (strict) {
 		DUK_DDD(DUK_DDDPRINT("this binding: strict -> use directly"));
 	} else {
 		duk_tval *tv_this = duk_require_tval(ctx, idx_this);
@@ -643,6 +650,7 @@ int duk_handle_call(duk_hthread *thr,
 	duk_hobject *env;
 	duk_jmpbuf our_jmpbuf;
 	duk_tval tv_tmp;
+	duk_tval *tv_func;
 	int retval = DUK_EXEC_ERROR;
 	int rc;
 
@@ -897,7 +905,17 @@ int duk_handle_call(duk_hthread *thr,
 	 *  See E5 Section 15.3.4.5.1.
 	 */
 
-	/* FIXME: lightweight function support here */
+	/* FIXME: hack for lightfunc testing */
+	tv_func = duk_require_tval(ctx, idx_func);
+	if (DUK_TVAL_IS_LIGHTFUNC(tv_func)) {
+		int lw_flags = DUK_TVAL_GET_LIGHTFUNC_FLAGS(tv_func);
+		func = NULL;
+		duk__coerce_effective_this_binding(thr, func, idx_func + 1);
+		DUK_D(DUK_DPRINT("effective 'this' binding is: %!T", duk_get_tval(ctx, idx_func + 1)));
+		nregs = 2;  /*FIXME*/
+		nargs = 2;
+		goto lfunc_hackery;
+	}
 
 	if (!duk_is_callable(thr, idx_func)) {
 		DUK_ERROR(thr, DUK_ERR_TYPE_ERROR, "call target not callable");
@@ -959,7 +977,8 @@ int duk_handle_call(duk_hthread *thr,
 	vs_min_size = (thr->valstack_bottom - thr->valstack) +         /* bottom of current func */
 	              idx_args;                                        /* bottom of new func */
 	vs_min_size += (nregs >= 0 ? nregs : num_stack_args);          /* num entries of new func at entry */
-	if (DUK_HOBJECT_IS_NATIVEFUNCTION(func)) {
+	if (func == NULL || DUK_HOBJECT_IS_NATIVEFUNCTION(func)) {
+		/* FIXME: lightweight funcs must be handled above */
 		vs_min_size += DUK_VALSTACK_API_ENTRY_MINIMUM;         /* Duktape/C API guaranteed entries (on top of args) */
 	}
 	vs_min_size += DUK_VALSTACK_INTERNAL_EXTRA,                    /* + spare */
@@ -976,6 +995,7 @@ int duk_handle_call(duk_hthread *thr,
 	 *  the Ecmascript call's idx_retval must be set for things to work.
 	 */
 
+ lfunc_hackery:
 	if (thr->callstack_top > 0) {
 		/* now set unconditionally, regardless of whether current activation
 		 * is native or not.
@@ -997,17 +1017,17 @@ int duk_handle_call(duk_hthread *thr,
 	thr->callstack_top++;
 	DUK_ASSERT(thr->callstack_top <= thr->callstack_size);
 	DUK_ASSERT(thr->valstack_top > thr->valstack_bottom);  /* at least effective 'this' */
-	DUK_ASSERT(!DUK_HOBJECT_HAS_BOUND(func));
+	DUK_ASSERT(func == NULL || !DUK_HOBJECT_HAS_BOUND(func));
 
 	act->flags = 0;
-	if (DUK_HOBJECT_HAS_STRICT(func)) {
+	if (func == NULL || DUK_HOBJECT_HAS_STRICT(func)) {
 		act->flags |= DUK_ACT_FLAG_STRICT;
 	}
 	if (call_flags & DUK_CALL_FLAG_CONSTRUCTOR_CALL) {
 		act->flags |= DUK_ACT_FLAG_CONSTRUCT;
 		/*act->flags |= DUK_ACT_FLAG_PREVENT_YIELD;*/
 	}
-	if (DUK_HOBJECT_IS_NATIVEFUNCTION(func)) {
+	if (func == NULL || DUK_HOBJECT_IS_NATIVEFUNCTION(func)) {
 		/*act->flags |= DUK_ACT_FLAG_PREVENT_YIELD;*/
 	}
 	if (call_flags & DUK_CALL_FLAG_DIRECT_EVAL) {
@@ -1019,7 +1039,7 @@ int duk_handle_call(duk_hthread *thr,
 	 */
 	act->flags |= DUK_ACT_FLAG_PREVENT_YIELD;
 
-	act->func = func;
+	act->func = func;  /* FIXME: this is an issue */
 	act->var_env = NULL;
 	act->lex_env = NULL;
 #ifdef DUK_USE_NONSTD_FUNC_CALLER_PROPERTY
@@ -1036,10 +1056,13 @@ int duk_handle_call(duk_hthread *thr,
 		thr->callstack_preventcount++;
 	}
 
+	/* FIXME: lightfunc? */
 	DUK_HOBJECT_INCREF(thr, func);  /* act->func */
 
 #ifdef DUK_USE_NONSTD_FUNC_CALLER_PROPERTY
-	duk__update_func_caller_prop(thr, func);
+	if (func) {
+		duk__update_func_caller_prop(thr, func);
+	}
 	act = thr->callstack + thr->callstack_top - 1;
 #endif
 
@@ -1063,9 +1086,9 @@ int duk_handle_call(duk_hthread *thr,
 	 *  Delayed creation (on demand) is handled in duk_js_var.c.
 	 */
 
-	DUK_ASSERT(!DUK_HOBJECT_HAS_BOUND(func));  /* bound function chain has already been resolved */
+	DUK_ASSERT(func == NULL || !DUK_HOBJECT_HAS_BOUND(func));  /* bound function chain has already been resolved */
 
-	if (!DUK_HOBJECT_HAS_NEWENV(func)) {
+	if (func != NULL && !DUK_HOBJECT_HAS_NEWENV(func)) {
 		/* use existing env (e.g. for non-strict eval); cannot have
 		 * an own 'arguments' object (but can refer to the existing one)
 		 */
@@ -1079,9 +1102,9 @@ int duk_handle_call(duk_hthread *thr,
 		goto env_done;
 	}
 
-	DUK_ASSERT(DUK_HOBJECT_HAS_NEWENV(func));
+	DUK_ASSERT(func == NULL || DUK_HOBJECT_HAS_NEWENV(func));
 
-	if (!DUK_HOBJECT_HAS_CREATEARGS(func)) {
+	if (func == NULL || !DUK_HOBJECT_HAS_CREATEARGS(func)) {
 		/* no need to create environment record now; leave as NULL */
 		DUK_ASSERT(act->lex_env == NULL);
 		DUK_ASSERT(act->var_env == NULL);
@@ -1130,7 +1153,7 @@ int duk_handle_call(duk_hthread *thr,
 	 *  Determine call type; then setup activation and call
 	 */
 
-	if (DUK_HOBJECT_IS_COMPILEDFUNCTION(func)) {
+	if (func != NULL && DUK_HOBJECT_IS_COMPILEDFUNCTION(func)) {
 		goto ecmascript_call;
 	} else {
 		goto native_call;
@@ -1151,7 +1174,7 @@ int duk_handle_call(duk_hthread *thr,
 	DUK_ASSERT(thr->valstack_bottom >= thr->valstack);
 	DUK_ASSERT(thr->valstack_top >= thr->valstack_bottom);
 	DUK_ASSERT(thr->valstack_end >= thr->valstack_top);
-	DUK_ASSERT(((duk_hnativefunction *) func)->func != NULL);
+	DUK_ASSERT(func == NULL || ((duk_hnativefunction *) func)->func != NULL);
 
 	/* [... func this | arg1 ... argN] ('this' must precede new bottom) */
 
@@ -1165,7 +1188,13 @@ int duk_handle_call(duk_hthread *thr,
 	 *  other  invalid
 	 */
 
-	rc = ((duk_hnativefunction *) func)->func((duk_context *) thr);
+	if (func) {
+		rc = ((duk_hnativefunction *) func)->func((duk_context *) thr);
+	} else {
+		/* FIXME: lightfunc */
+		duk_c_function funcptr = DUK_TVAL_GET_LIGHTFUNC_FUNCPTR(tv_func);
+		rc = funcptr((duk_context *) thr);
+	}
 
 	if (rc < 0) {
 		duk_error_throw_from_negative_rc(thr, rc);

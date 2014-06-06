@@ -137,6 +137,8 @@ typedef union duk_double_union duk_tval;
 		(out_flags) = (v)->ui[DUK_DBL_IDX_UI0] & 0xffffUL; \
 		(out_fp) = (v)->ui[DUK_DBL_IDX_UI1]; \
 	} while (0)
+#define DUK_TVAL_GET_LIGHTFUNC_FUNCPTR(v)   ((duk_c_function) ((v)->ui[DUK_DBL_IDX_UI1]))
+#define DUK_TVAL_GET_LIGHTFUNC_FLAGS(v)     (((int) (v)->ui[DUK_DBL_IDX_UI0]) & 0xffffUL)
 #define DUK_TVAL_GET_STRING(v)              ((duk_hstring *) (v)->vp[DUK_DBL_IDX_VP1])
 #define DUK_TVAL_GET_OBJECT(v)              ((duk_hobject *) (v)->vp[DUK_DBL_IDX_VP1])
 #define DUK_TVAL_GET_BUFFER(v)              ((duk_hbuffer *) (v)->vp[DUK_DBL_IDX_VP1])
@@ -153,6 +155,7 @@ typedef union duk_double_union duk_tval;
 #define DUK_TVAL_IS_BOOLEAN(v)              (DUK_TVAL_GET_TAG((v)) == DUK_TAG_BOOLEAN)
 #define DUK_TVAL_IS_BOOLEAN_TRUE(v)         ((v)->ui[DUK_DBL_IDX_UI0] == DUK_XTAG_BOOLEAN_TRUE)
 #define DUK_TVAL_IS_BOOLEAN_FALSE(v)        ((v)->ui[DUK_DBL_IDX_UI0] == DUK_XTAG_BOOLEAN_FALSE)
+#define DUK_TVAL_IS_LIGHTFUNC(v)            (DUK_TVAL_GET_TAG((v)) == DUK_TAG_LIGHTFUNC)
 #define DUK_TVAL_IS_STRING(v)               (DUK_TVAL_GET_TAG((v)) == DUK_TAG_STRING)
 #define DUK_TVAL_IS_OBJECT(v)               (DUK_TVAL_GET_TAG((v)) == DUK_TAG_OBJECT)
 #define DUK_TVAL_IS_BUFFER(v)               (DUK_TVAL_GET_TAG((v)) == DUK_TAG_BUFFER)

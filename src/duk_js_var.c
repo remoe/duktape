@@ -565,7 +565,7 @@ void duk_js_close_environment_record(duk_hthread *thr, duk_hobject *env, duk_hob
 
 	DUK_ASSERT(thr != NULL);
 	DUK_ASSERT(env != NULL);
-	DUK_ASSERT(func != NULL);
+	/* FIXME: DUK_ASSERT(func != NULL); */
 
 	if (!DUK_HOBJECT_IS_DECENV(env) || DUK_HOBJECT_HAS_ENVRECCLOSED(env)) {
 		DUK_DDD(DUK_DDDPRINT("environment record not a declarative record, or already closed: %!iO", env));
@@ -603,7 +603,7 @@ void duk_js_close_environment_record(duk_hthread *thr, duk_hobject *env, duk_hob
 	}
 #endif
 
-	if (DUK_HOBJECT_IS_COMPILEDFUNCTION(func)) {
+	if (func != NULL && DUK_HOBJECT_IS_COMPILEDFUNCTION(func)) {
 		duk_hobject *varmap;
 		duk_hstring *key;
 		duk_tval *tv;

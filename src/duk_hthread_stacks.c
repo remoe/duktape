@@ -127,14 +127,14 @@ void duk_hthread_callstack_unwind(duk_hthread *thr, int new_top) {
 		DUK_ASSERT((duk_size_t) idx < thr->callstack_size);  /* true, despite side effect resizes */
 
 		p = &thr->callstack[idx];
-		DUK_ASSERT(p->func != NULL);
+		/* FIXME: DUK_ASSERT(p->func != NULL); */
 
 #ifdef DUK_USE_NONSTD_FUNC_CALLER_PROPERTY
 		/*
 		 *  Restore 'caller' property for non-strict callee functions.
 		 */
 
-		if (!DUK_HOBJECT_HAS_STRICT(p->func)) {
+		if (p->func != NULL && !DUK_HOBJECT_HAS_STRICT(p->func)) {
 			duk_tval *tv_caller;
 			duk_tval tv_tmp;
 			duk_hobject *h_tmp;
@@ -181,7 +181,7 @@ void duk_hthread_callstack_unwind(duk_hthread *thr, int new_top) {
 		 *  environment is created for e.g. an eval call, it must not be closed.
 		 */
 
-		if (!DUK_HOBJECT_HAS_NEWENV(p->func)) {
+		if (p->func != NULL && !DUK_HOBJECT_HAS_NEWENV(p->func)) {
 			DUK_DDD(DUK_DDDPRINT("skip closing environments, envs not owned by this activation"));
 			goto skip_env_close;
 		}
