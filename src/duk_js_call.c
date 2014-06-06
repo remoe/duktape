@@ -912,8 +912,8 @@ int duk_handle_call(duk_hthread *thr,
 		func = NULL;
 		duk__coerce_effective_this_binding(thr, func, idx_func + 1);
 		DUK_D(DUK_DPRINT("effective 'this' binding is: %!T", duk_get_tval(ctx, idx_func + 1)));
-		nregs = 2;  /*FIXME*/
-		nargs = 2;
+		nargs = lw_flags & 0xff;
+		nregs = nargs;
 		goto lfunc_hackery;
 	}
 

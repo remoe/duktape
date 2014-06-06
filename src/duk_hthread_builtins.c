@@ -397,8 +397,24 @@ void duk_hthread_create_builtin_objects(duk_hthread *thr) {
 
 			c_func = duk_bi_native_functions[natidx];
 
-			DUK_DDD(DUK_DDDPRINT("built-in %d, function-valued property %d, stridx %d, natidx %d, length %d, nargs %d",
-			                     i, j, stridx, natidx, c_length, (c_nargs == DUK_VARARGS ? -1 : c_nargs)));
+			DUK_D(DUK_DPRINT("built-in %d, function-valued property %d, stridx %d, natidx %d, length %d, nargs %d",
+			                 i, j, stridx, natidx, c_length, (c_nargs == DUK_VARARGS ? -1 : c_nargs)));
+
+			/* Cast converts magic to 16-bit signed value */
+			magic = (duk_int16_t) duk_bd_decode_flagged(bd, DUK__MAGIC_BITS, 0);
+
+#if 1  /* FIXME: lightfunc testing hack */
+			if (c_length == c_nargs && c_nargs != DUK_VARARGS && magic == 0) {
+				/* FIXME: how many bits for magic? since activation doesn't store
+				 * lightfunc now, allow only magic=0 here.
+				 */
+				duk_tval tv_lfunc;
+				DUK_TVAL_SET_LIGHTFUNC(&tv_lfunc, c_func, c_nargs | (magic << 8));
+				duk_push_tval(ctx, &tv_lfunc);
+				goto lightfunc_skip;
+			}
+#endif
+
 
 			/* [ (builtin objects) ] */
 
@@ -422,8 +438,6 @@ void duk_hthread_create_builtin_objects(duk_hthread *thr) {
 			/* XXX: any way to avoid decoding magic bit; there are quite
 			 * many function properties and relatively few with magic values.
 			 */
-			/* Cast converts magic to 16-bit signed value */
-			magic = (duk_int16_t) duk_bd_decode_flagged(bd, DUK__MAGIC_BITS, 0);
 			h_func->magic = magic;
 
 			/* [ (builtin objects) func ] */
@@ -444,6 +458,8 @@ void duk_hthread_create_builtin_objects(duk_hthread *thr) {
 			 *  The default property attributes are correct for all
 			 *  function valued properties of built-in objects now.
 			 */
+
+		 lightfunc_skip:
 
 			duk_def_prop_stridx(ctx, i, stridx, DUK_PROPDESC_FLAGS_WC);
 
@@ -581,7 +597,7 @@ void duk_hthread_create_builtin_objects(duk_hthread *thr) {
 #if 1  /* FIXME: lightfunc testing hack */
 	{
 		duk_tval tv_lfunc;
-		DUK_TVAL_SET_LIGHTFUNC(&tv_lfunc, duk__lightfunc_test, 0);
+		DUK_TVAL_SET_LIGHTFUNC(&tv_lfunc, duk__lightfunc_test, 2);  /* FIXME: args */
 		duk_push_string(ctx, "fixme_lightfunc_test");
 		duk_push_tval(ctx, &tv_lfunc);
 		duk_def_prop(ctx, DUK_BIDX_DUKTAPE, DUK_PROPDESC_FLAGS_WC);
