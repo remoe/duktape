@@ -438,6 +438,10 @@ int duk_get_magic(duk_context *ctx) {
 
 	act = thr->callstack + thr->callstack_top - 1;
 	func = act->func;
+	if (!func) {
+		/* FIXME: here we need to get lightfunc's magic value */
+		return 0;
+	}
 	DUK_ASSERT(func != NULL);
 
 	if (DUK_HOBJECT_IS_NATIVEFUNCTION(func)) {
