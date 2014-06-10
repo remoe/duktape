@@ -15,6 +15,10 @@ properties in the function object as normal properties.</p>
 unsigned int my_flags = ((unsigned int) duk_get_magic(ctx)) & 0xffff;
 </pre>
 
+<div class="note">
+Lightweight functions have space for only <b>FIXME</b> magic value bits.
+</div>
+
 =example
 int my_flags = duk_get_magic(ctx);
 if (my_flags & 0x01) {
